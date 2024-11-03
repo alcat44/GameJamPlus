@@ -8,7 +8,7 @@ public class EnemyPatrol : MonoBehaviour
     public float speed = 2f;                 // Kecepatan patroli
     public float detectionRange = 5f;        // Jarak penglihatan enemy
     public int damage = 1;                   // Damage yang diberikan kepada player
-    public Collider safeZoneCollider;        // Collider untuk safe zone (gunakan Collider dengan isTrigger aktif)
+    public BoxCollider safeZoneCollider;     // Box Collider untuk safe zone (gunakan Collider dengan isTrigger aktif)
     private int currentPointIndex = 0;       // Indeks titik patroli yang sedang dituju
     private Transform player;                // Referensi ke player
     private HealthManager healthManager;     // Referensi ke HealthManager
@@ -16,6 +16,7 @@ public class EnemyPatrol : MonoBehaviour
     private bool isShouting = false;         // Status apakah enemy sedang berteriak
     private bool hasDealtDamage = false;     // Status apakah enemy sudah mengurangi nyawa player dalam deteksi ini
     private bool isPlayerInSafeZone = false; // Status apakah player berada di safe zone
+    public SafeZoneTrigger safeZoneTrigger;
 
     void Start()
     {
@@ -26,6 +27,12 @@ public class EnemyPatrol : MonoBehaviour
 
         player = GameObject.FindGameObjectWithTag("Player").transform;
         healthManager = player.GetComponent<HealthManager>();
+
+        // Pastikan Box Collider safe zone sudah diatur dengan isTrigger = true
+        if (safeZoneCollider != null)
+        {
+            safeZoneCollider.isTrigger = true;
+        }
     }
 
     void Update()
@@ -65,23 +72,23 @@ public class EnemyPatrol : MonoBehaviour
 
     private void DetectPlayer()
     {
-        // Jika player berada di safe zone atau enemy sedang berteriak, tidak melakukan deteksi
-        if (isPlayerInSafeZone || player == null || healthManager == null || isShouting)
+        if (player == null || healthManager == null || isShouting)
             return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // Jika player dalam jarak penglihatan dan tidak di safe zone
-        if (distanceToPlayer <= detectionRange)
+        // Cek jika player dalam jarak penglihatan dan status safe zone-nya
+        if (distanceToPlayer <= detectionRange && !safeZoneTrigger.IsPlayerHidden() && !player.GetComponent<TPMovementRB>().IsInvincible())
         {
             if (!hasDealtDamage)
             {
-                healthManager.TakeDamage(damage);  // Kurangi nyawa player
-                hasDealtDamage = true;             // Tandai bahwa damage sudah diberikan
-                StartCoroutine(ShoutCoroutine());  // Mulai teriakan selama 5 detik
+                healthManager.TakeDamage(damage);
+                hasDealtDamage = true;
+                StartCoroutine(ShoutCoroutine());
             }
         }
     }
+
 
     private IEnumerator ShoutCoroutine()
     {
@@ -101,6 +108,8 @@ public class EnemyPatrol : MonoBehaviour
         if (other.CompareTag("Player") && other == player.GetComponent<Collider>())
         {
             isPlayerInSafeZone = true;
+            hasDealtDamage = false;   // Reset status damage agar tidak mengurangi nyawa selama player di safe zone
+            isShouting = false;       // Pastikan enemy berhenti berteriak saat player di safe zone
         }
     }
 

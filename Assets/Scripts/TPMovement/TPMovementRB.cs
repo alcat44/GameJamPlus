@@ -1,52 +1,62 @@
 using UnityEngine;
+using System.Collections;
 
 [RequireComponent(typeof(Rigidbody), typeof(Animator))]
 public class TPMovementRB : MonoBehaviour
 {
     #region Component
 
-    private Transform _cameraTransform;     // Kamera yang menargetkan player
-    private Rigidbody _rigidbody;           // Komponen Rigidbody yang terpasang pada player
-    private Animator _animator;             // Komponen Animator yang terpasang pada player
+    private Transform _cameraTransform;
+    private Rigidbody _rigidbody;
+    private Animator _animator;
 
     #endregion
 
     #region Setting
 
     [Header("Move")]
-    [SerializeField] float _walkSpeed = 2.5f;           // Kecepatan berjalan
-    [SerializeField] float _runSpeed = 5f;              // Kecepatan berlari
-    [SerializeField] float _sprintSpeed = 10f;          // Kecepatan sprint
-    [SerializeField] float _crouchSpeed = 1.25f;        // Kecepatan berjalan jongkok
+    [SerializeField] float _walkSpeed = 2.5f;
+    [SerializeField] float _runSpeed = 5f;
+    [SerializeField] float _sprintSpeed = 10f;
+    [SerializeField] float _crouchSpeed = 1.25f;
 
     [Header("Facing Speed")]
-    [SerializeField] float _normalFacing = 3f;          // Kecepatan rotasi normal
-    [SerializeField] float _sprintFacing = 0.15f;       // Kecepatan rotasi saat sprint
+    [SerializeField] float _normalFacing = 3f;
+    [SerializeField] float _sprintFacing = 0.15f;
 
     [Header("Jump")]
-    [SerializeField] float _jumpHeight = 2.5f;          // Tinggi lompatan
+    [SerializeField] float _jumpHeight = 2.5f;
 
     [Header("Gravity")]
-    [SerializeField] float _gravity = -9.8f;            // Nilai gravitasi
-    [SerializeField] float _gravityScale = 3;           // Skala gravitasi
+    [SerializeField] float _gravity = -9.8f;
+    [SerializeField] float _gravityScale = 3;
 
     #endregion
 
     #region Modifier
 
-    private Vector2 _moveAxis;          // Arah dari input
-    private Vector3 _direction;         // Arah relatif
-    private Vector3 _directionForward;  // Arah ke depan
-    private Vector3 _velocity;          // Gerakan
-    private float _facingSpeed;         // Kecepatan rotasi
-    private bool _isCrouching = false;  // Status jongkok
-    private bool _isGrounded = true;    // Status apakah player sedang di tanah
+    private Vector2 _moveAxis;
+    private Vector3 _direction;
+    private Vector3 _directionForward;
+    private Vector3 _velocity;
+    private float _facingSpeed;
+    private bool _isCrouching = false;
+    private bool _isGrounded = true;
 
     public Vector3 Velocity { get => _velocity; }
 
     #endregion
 
-    #region Unity Methods
+    #region Invincibility Settings
+
+    [Header("Invincibility Settings")]
+    [SerializeField] private float invincibilityDuration = 5f; // Durasi kebal dalam detik
+    [SerializeField] private Collider protectionZoneTrigger; // Trigger kebal yang bisa diatur di Inspector
+    private bool isInvincible = false;
+    private Coroutine invincibilityCoroutine;
+    
+
+    #endregion
 
     private void Start()
     {
@@ -55,9 +65,40 @@ public class TPMovementRB : MonoBehaviour
         _animator = GetComponent<Animator>();
     }
 
-    #endregion
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other == protectionZoneTrigger)
+        {
+            if (invincibilityCoroutine != null)
+            {
+                StopCoroutine(invincibilityCoroutine);
+            }
+            invincibilityCoroutine = StartCoroutine(InvincibilityTimer());
+        }
+    }
 
-    #region Private Methods
+    private void OnTriggerExit(Collider other)
+    {
+        if (other == protectionZoneTrigger && invincibilityCoroutine != null)
+        {
+            StopCoroutine(invincibilityCoroutine);
+            isInvincible = false;
+            invincibilityCoroutine = null;
+        }
+    }
+
+    private IEnumerator InvincibilityTimer()
+    {
+        isInvincible = true;
+        yield return new WaitForSeconds(invincibilityDuration);
+        isInvincible = false;
+        invincibilityCoroutine = null;
+    }
+
+    public bool IsInvincible()
+    {
+        return isInvincible;
+    }
 
     private void CalculateDirection()
     {
@@ -125,8 +166,6 @@ public class TPMovementRB : MonoBehaviour
     public void OnUpdate(Vector2 moveAxis)
     {
         _moveAxis = moveAxis;
-
-        // Check if player is grounded
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
 
         CalculateDirection();
@@ -196,12 +235,10 @@ public class TPMovementRB : MonoBehaviour
 
     public void Jump()
     {
-        if (_isGrounded && !_isCrouching) // Lompat hanya jika di tanah dan tidak sedang jongkok
+        if (_isGrounded && !_isCrouching)
         {
             _velocity.y = Mathf.Sqrt(_jumpHeight * -2 * (_gravity * _gravityScale));
             _animator.SetBool("isJumping", true);
         }
     }
-
-    #endregion
 }
