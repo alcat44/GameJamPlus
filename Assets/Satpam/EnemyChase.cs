@@ -4,7 +4,9 @@ using UnityEngine.AI;
 public class EnemyChase : MonoBehaviour
 {
     public Transform player;
+    public GameObject satpam;
     private NavMeshAgent agent;
+
     public static bool isChasing = false;  // Static variabel untuk status pengejaran
 
     public float attackRange = 2.0f;         // Jarak serang musuh
@@ -44,5 +46,10 @@ public class EnemyChase : MonoBehaviour
         {
             playerHealth.GameOver();  // Langsung memanggil metode GameOver
         }
+    }
+    public void StopChasingPlayer()
+    {
+        isChasing = false;
+        
     }
 }

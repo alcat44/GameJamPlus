@@ -12,6 +12,7 @@ public class HealthManager : MonoBehaviour
     public HealthUI healthUI;                   // Referensi ke HealthUI
     public List<GameObject> gameOverElements;   // List untuk elemen-elemen UI Game Over
     public GameObject playAgainButton;          // Referensi untuk tombol Play Again
+    public GameObject enemy;
 
     void Start()
     {
@@ -88,6 +89,7 @@ public class HealthManager : MonoBehaviour
     public void PlayAgain()
     {
         Time.timeScale = 1;  // Mengembalikan waktu permainan ke normal
+        enemy.GetComponent<EnemyChase>().StopChasingPlayer();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);  // Muat ulang scene saat ini
         
         // Sembunyikan kursor kembali saat permainan dimulai ulang
